@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="128" fill="#2563eb" />
+  <g transform="translate(146, 106)">
+    <!-- Pola Keping Numicon 5 (Oranye Merah) -->
+    <rect width="220" height="300" rx="40" fill="#ef4444" />
+    <!-- Notch / Undakan Ganjil Atas -->
+    <rect x="110" y="0" width="110" height="100" rx="20" fill="#2563eb" />
+    
+    <!-- Lubang 1 (Atas Kiri) -->
+    <circle cx="55" cy="50" r="32" fill="#2563eb" />
+    
+    <!-- Lubang 2 & 3 (Baris Tengah) -->
+    <circle cx="55" cy="150" r="32" fill="#2563eb" />
+    <circle cx="165" cy="150" r="32" fill="#2563eb" />
+    
+    <!-- Lubang 4 & 5 (Baris Bawah) -->
+    <circle cx="55" cy="250" r="32" fill="#2563eb" />
+    <circle cx="165" cy="250" r="32" fill="#2563eb" />
+  </g>
+</svg>
