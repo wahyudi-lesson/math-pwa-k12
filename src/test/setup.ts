@@ -1,7 +1,6 @@
 // src/test/setup.ts
 import 'fake-indexeddb/auto';
 
-// Mock Web Speech API untuk lingkungan Node.js/JSDOM
 if (typeof window !== 'undefined') {
   window.speechSynthesis = {
     cancel: () => {},
