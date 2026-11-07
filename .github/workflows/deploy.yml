@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: Deploy PWA to GitHub Pages
 
 on:
@@ -30,11 +29,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Automated Tests
         run: npm run test:ci
