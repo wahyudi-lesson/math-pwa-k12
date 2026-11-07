@@ -31,48 +31,223 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-// Fallback tantangan dasar jika bank konten belum termuat
-const FALLBACK_CHALLENGES: Challenge[] = [
+// Bank soal fallback berisi 10 level lengkap
+const FALLBACK_10_CHALLENGES: Challenge[] = [
   {
     id: 'cam-ey-01',
-    moduleCode: 'CAM-EY-NUM-01',
+    moduleCode: 'EY-NUM-01',
     curriculum: 'cambridge',
     stage: 'Early Years',
     phase: 'concrete',
-    title: 'Misi 1: Mengenal Angka 5',
+    title: 'Misi 1: Mengenal Angka 3',
+    instruction: {
+      text: 'Tarik kepingan ke papan sampai jumlah seluruh lubang tepat bernilai 3!',
+      speechText: 'Tarik kepingan ke papan sampai jumlah seluruh lubang tepat bernilai tiga!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Kamu bisa memakai 1 keping kuning (3), atau keping 2 ditambah keping 1.',
+      speechText: 'Kamu bisa memakai satu keping kuning tiga, atau keping dua ditambah keping satu.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 3 },
+    availableTrayPieces: [1, 2, 3],
+  },
+  {
+    id: 'cam-ey-02',
+    moduleCode: 'EY-NUM-02',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'concrete',
+    title: 'Misi 2: Mengenal Angka 5',
     instruction: {
       text: 'Tarik kepingan ke papan sampai jumlah seluruh lubang tepat bernilai 5!',
       speechText: 'Tarik kepingan ke papan sampai jumlah seluruh lubang tepat bernilai lima!',
       lang: 'id-ID',
     },
     hint: {
-      text: 'Petunjuk: Kamu bisa menggunakan satu keping 5, atau gabungan keping 2 dan 3.',
-      speechText: 'Petunjuk: Kamu bisa menggunakan satu keping lima, atau gabungan keping dua dan tiga.',
+      text: 'Gunakan keping 5 berwarna merah, atau gabungkan keping 3 dan 2.',
+      speechText: 'Gunakan keping lima berwarna merah, atau gabungkan keping tiga dan dua.',
       lang: 'id-ID',
     },
-    validation: {
-      type: 'exact-sum',
-      targetTotal: 5,
-    },
+    validation: { type: 'exact-sum', targetTotal: 5 },
     availableTrayPieces: [1, 2, 3, 4, 5],
+  },
+  {
+    id: 'cam-ey-03',
+    moduleCode: 'EY-BONDS-05',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'concrete',
+    title: 'Misi 3: Pasangan Bilangan 5',
+    instruction: {
+      text: 'Gunakan tepat 2 keping Numicon untuk membuat jumlah 5!',
+      speechText: 'Gunakan tepat dua keping Numicon untuk membuat jumlah lima!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Pasangkan keping 4 dengan 1, atau keping 3 dengan 2.',
+      speechText: 'Pasangkan keping empat dengan satu, atau keping tiga dengan dua.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 5, minPiecesAllowed: 2, maxPiecesAllowed: 2 },
+    availableTrayPieces: [1, 2, 3, 4],
+  },
+  {
+    id: 'cam-ey-04',
+    moduleCode: 'EY-PAR-04',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'pictorial',
+    title: 'Misi 4: Bilangan Genap 4',
+    instruction: {
+      text: 'Gunakan hanya keping bilangan GENAP (tepi atas rata) hingga totalnya 4!',
+      speechText: 'Gunakan hanya keping bilangan genap yang tepi atasnya rata hingga totalnya empat!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Pilih keping hijau muda (4), atau gunakan dua keping biru muda (2).',
+      speechText: 'Pilih keping hijau muda empat, atau gunakan dua keping biru muda dua.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'parity-check', targetTotal: 4, requiredParity: 'even' },
+    availableTrayPieces: [1, 2, 3, 4],
+  },
+  {
+    id: 'cam-ey-05',
+    moduleCode: 'EY-NUM-06',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'concrete',
+    title: 'Misi 5: Membentuk Angka 6',
+    instruction: {
+      text: 'Susun kepingan hingga menghasilkan tepat 6 lubang!',
+      speechText: 'Susun kepingan hingga menghasilkan tepat enam lubang!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Ambil keping cyan (6) langsung, atau gabungkan dua keping kuning (3).',
+      speechText: 'Ambil keping cyan enam langsung, atau gabungkan dua keping kuning tiga.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 6 },
+    availableTrayPieces: [1, 2, 3, 4, 5, 6],
+  },
+  {
+    id: 'cam-ey-06',
+    moduleCode: 'EY-ODD-07',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'pictorial',
+    title: 'Misi 6: Penjelajah Bilangan Ganjil 7',
+    instruction: {
+      text: 'Gunakan hanya keping bilangan GANJIL (ada 1 lubang menonjol) hingga bernilai 7!',
+      speechText: 'Gunakan hanya keping bilangan ganjil yang memiliki satu lubang menonjol hingga bernilai tujuh!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Keping ganjil memiliki ujung ekstra: 1, 3, 5, dan 7. Coba gunakan keping merah muda (7).',
+      speechText: 'Keping ganjil memiliki ujung ekstra: satu, tiga, lima, dan tujuh. Coba gunakan keping merah muda tujuh.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'parity-check', targetTotal: 7, requiredParity: 'odd' },
+    availableTrayPieces: [1, 2, 3, 4, 5, 7],
+  },
+  {
+    id: 'cam-ey-07',
+    moduleCode: 'EY-BONDS-08',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'concrete',
+    title: 'Misi 7: Pasangan Bilangan Menuju 8',
+    instruction: {
+      text: 'Gunakan tepat 2 keping Numicon untuk menghasilkan total 8!',
+      speechText: 'Gunakan tepat dua keping Numicon untuk menghasilkan total delapan!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Kombinasikan keping 5 dan 3, keping 6 dan 2, atau dua keping 4.',
+      speechText: 'Kombinasikan keping lima dan tiga, keping enam dan dua, atau dua keping empat.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 8, minPiecesAllowed: 2, maxPiecesAllowed: 2 },
+    availableTrayPieces: [1, 2, 3, 4, 5, 6, 7],
+  },
+  {
+    id: 'cam-ey-08',
+    moduleCode: 'EY-PAR-08',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'pictorial',
+    title: 'Misi 8: Pasukan Bilangan Genap 8',
+    instruction: {
+      text: 'Kumpulkan keping bilangan GENAP saja hingga jumlahnya tepat 8!',
+      speechText: 'Kumpulkan keping bilangan genap saja hingga jumlahnya tepat delapan!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Gunakan keping genap rata: 2, 4, 6, atau 8. Jangan pasang keping ganjil.',
+      speechText: 'Gunakan keping genap rata: dua, empat, enam, atau delapan. Jangan pasang keping ganjil.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'parity-check', targetTotal: 8, requiredParity: 'even' },
+    availableTrayPieces: [1, 2, 3, 4, 5, 6, 8],
+  },
+  {
+    id: 'cam-ey-09',
+    moduleCode: 'EY-BONDS-10',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'concrete',
+    title: 'Misi 9: Ikatan Bilangan Menuju 10',
+    instruction: {
+      text: 'Gunakan tepat 2 keping Numicon untuk membuat angka 10!',
+      speechText: 'Gunakan tepat dua keping Numicon untuk membuat angka sepuluh!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Pasangkan keping 7 dengan 3, keping 6 dengan 4, atau keping 8 dengan 2.',
+      speechText: 'Pasangkan keping tujuh dengan tiga, keping enam dengan empat, atau keping delapan dengan dua.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 10, minPiecesAllowed: 2, maxPiecesAllowed: 2 },
+    availableTrayPieces: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  },
+  {
+    id: 'cam-ey-10',
+    moduleCode: 'EY-TRIO-10',
+    curriculum: 'cambridge',
+    stage: 'Early Years',
+    phase: 'abstract',
+    title: 'Misi 10: Master Kombinasi Tiga Keping 10',
+    instruction: {
+      text: 'Gunakan tepat 3 keping Numicon untuk membentuk total 10!',
+      speechText: 'Gunakan tepat tiga keping Numicon untuk membentuk total sepuluh!',
+      lang: 'id-ID',
+    },
+    hint: {
+      text: 'Contohnya gabungan keping 5, 3, dan 2, atau keping 4, 4, dan 2.',
+      speechText: 'Contohnya gabungan keping lima, tiga, dan dua, atau keping empat, empat, dan dua.',
+      lang: 'id-ID',
+    },
+    validation: { type: 'exact-sum', targetTotal: 10, minPiecesAllowed: 3, maxPiecesAllowed: 3 },
+    availableTrayPieces: [1, 2, 3, 4, 5, 6],
   },
 ];
 
 export default function App() {
-  // 1. State Pemilihan Kurikulum & Jenjang
   const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumTrack>('cambridge');
   const [selectedStage, setSelectedStage] = useState<string>('Early Years');
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState<number>(0);
 
-  // 2. Ambil daftar tantangan secara dinamis dari src/content/
+  // Ambil daftar tantangan
   const stageChallenges = useMemo(() => {
     const loaded = getChallengesByStage(selectedCurriculum, selectedStage);
-    return loaded.length > 0 ? loaded : FALLBACK_CHALLENGES;
+    return loaded.length >= 10 ? loaded : FALLBACK_10_CHALLENGES;
   }, [selectedCurriculum, selectedStage]);
 
   const activeChallenge = stageChallenges[currentChallengeIndex] || stageChallenges[0];
 
-  // 3. State Papan Kanvas & Evaluasi
   const [currentTotal, setCurrentTotal] = useState<number>(0);
   const [currentPieces, setCurrentPieces] = useState<PlacedPiece[]>([]);
   const [attempts, setAttempts] = useState<number>(0);
@@ -81,11 +256,9 @@ export default function App() {
   const [showHint, setShowHint] = useState<boolean>(false);
   const [boardKey, setBoardKey] = useState<number>(0);
 
-  // 4. PWA Installation State
   const [isInstallable, setIsInstallable] = useState<boolean>(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // 5. Riwayat Bintang & Progres Siswa
   const [progressMap, setProgressMap] = useState<Record<string, StudentTopicProgress>>(() => {
     try {
       const saved = localStorage.getItem('mathverse_progress');
@@ -97,7 +270,6 @@ export default function App() {
 
   const currentProgress = activeChallenge ? progressMap[activeChallenge.id] : undefined;
 
-  // Tangkap event instalasi browser untuk PWA
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -113,13 +285,10 @@ export default function App() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstallable(false);
-    }
+    if (outcome === 'accepted') setIsInstallable(false);
     setDeferredPrompt(null);
   };
 
-  // Baca otomatis instruksi suara setiap kali level atau kurikulum berganti
   useEffect(() => {
     stopSpeech();
     setIsSpeakingText(false);
@@ -142,7 +311,6 @@ export default function App() {
     }
   }, [selectedCurriculum, selectedStage, currentChallengeIndex]);
 
-  // Fungsi pengontrol suara Text-to-Speech
   const handlePlaySpeech = (instruction: Challenge['instruction']) => {
     if (isSpeakingText) {
       stopSpeech();
@@ -157,14 +325,12 @@ export default function App() {
     });
   };
 
-  // Pembaruan data papan kanvas
   const handleBoardUpdate = useCallback((total: number, pieces: PlacedPiece[]) => {
     setCurrentTotal(total);
     setCurrentPieces(pieces);
     setEvaluation((prev) => (prev ? null : prev));
   }, []);
 
-  // Mesin Evaluasi Aturan Pembelajaran
   const handleCheckAnswer = async () => {
     if (!activeChallenge) return;
     const nextAttempts = attempts + 1;
@@ -173,7 +339,6 @@ export default function App() {
     const rules = activeChallenge.validation;
     const pieceCount = currentPieces.length;
 
-    // 1. Kondisi papan kosong
     if (pieceCount === 0) {
       playSoundEffect('wrong');
       const res: EvaluationResult = {
@@ -189,7 +354,6 @@ export default function App() {
       return;
     }
 
-    // 2. Evaluasi Nilai Tepat (exact-sum)
     if (rules.type === 'exact-sum') {
       const target = rules.targetTotal || 0;
 
@@ -201,8 +365,8 @@ export default function App() {
             currentTotal,
             currentPieceCount: pieceCount,
             stars: 0,
-            feedbackText: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping ya!`,
-            feedbackSpeech: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping ya!`,
+            feedbackText: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping!`,
+            feedbackSpeech: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping!`,
           };
           setEvaluation(res);
           speakInstruction(res.feedbackSpeech);
@@ -248,7 +412,6 @@ export default function App() {
       return;
     }
 
-    // 3. Evaluasi Paritas Bilangan (Ganjil vs Genap)
     if (rules.type === 'parity-check') {
       const target = rules.targetTotal || 0;
       const isTargetEven = rules.requiredParity === 'even';
@@ -294,7 +457,6 @@ export default function App() {
     }
   };
 
-  // Penanganan Keberhasilan Asesmen
   const handleSuccess = async (finalAttempts: number) => {
     const starsEarned = (finalAttempts <= 1 ? 3 : finalAttempts === 2 ? 2 : 1) as 1 | 2 | 3;
 
@@ -335,7 +497,6 @@ export default function App() {
       lastAttemptTimestamp: Date.now(),
     };
 
-    // Simpan ke State dan LocalStorage
     const newProgressMap = {
       ...progressMap,
       [activeChallenge.id]: updatedRecord,
@@ -343,7 +504,6 @@ export default function App() {
     setProgressMap(newProgressMap);
     try {
       localStorage.setItem('mathverse_progress', JSON.stringify(newProgressMap));
-      // Sinkronisasi ke IndexedDB di background
       await saveProgress(updatedRecord);
     } catch (e) {
       console.warn('Gagal menyimpan progres secara lokal', e);
@@ -426,7 +586,6 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Tombol Cambridge vs IB */}
             <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1">
               {(['cambridge', 'ib'] as CurriculumTrack[]).map((cur) => (
                 <button
@@ -448,7 +607,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Dropdown Jenjang (Stage / Grade) */}
             <select
               value={selectedStage}
               onChange={(e) => {
@@ -466,8 +624,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tab Pemilihan Level / Misi Belajar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {/* Tab Pemilihan Level 1 sampai 10 (Mendukung Geser Layar Sentuh Tablet) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin">
           {stageChallenges.map((ch, idx) => {
             const isCompleted = progressMap[ch.id]?.completed;
             const starCount = progressMap[ch.id]?.starsEarned || 0;
@@ -478,7 +636,7 @@ export default function App() {
                 key={ch.id}
                 type="button"
                 onClick={() => setCurrentChallengeIndex(idx)}
-                className={`flex-shrink-0 px-4 py-2 rounded-2xl font-bold text-xs transition-all flex items-center gap-2 border ${
+                className={`flex-shrink-0 px-3.5 py-2 rounded-2xl font-bold text-xs transition-all flex items-center gap-1.5 border ${
                   isActive
                     ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -493,7 +651,7 @@ export default function App() {
                     </span>
                   </span>
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-slate-300" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                 )}
               </button>
             );
@@ -585,7 +743,7 @@ export default function App() {
           </section>
         )}
 
-        {/* 3. Kanvas Papan Permainan Interaktif Numicon */}
+        {/* 3. Kanvas Papan Permainan Numicon */}
         <section className="relative">
           <GameBoard
             key={boardKey}
@@ -620,7 +778,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Feedback Hasil Pemeriksaan */}
           {evaluation && (
             <div
               className={`flex-1 px-4 py-2.5 rounded-2xl flex items-center gap-3 border text-sm font-bold animate-in fade-in zoom-in-95 duration-150 ${
@@ -653,7 +810,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Tombol Kontrol */}
           <div className="flex items-center gap-2 w-full md:w-auto justify-end">
             <button
               type="button"
