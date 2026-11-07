@@ -223,8 +223,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     triggerTotalUpdate(pieces);
   };
 
-  const selectedPiece = pieces.find((p) => p.id === selectedPieceId);
-
   return (
     <div className={`flex flex-col gap-4 select-none ${className}`}>
       {/* 1. Kanvas Papan Permainan Utama */}
