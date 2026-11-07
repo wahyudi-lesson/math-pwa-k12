@@ -62,7 +62,7 @@ export type LearningPhase = 'concrete' | 'pictorial' | 'abstract';
  */
 export interface TTSInstruction {
   text: string;           // Teks yang ditampilkan di antarmuka
-  speechText?: string;     // Teks fonetik yang dibacakan oleh mesin suara (bila berbeda dari teks visual)
+  speechText?: string;     // Teks fonetik yang dibacakan oleh mesin suara
   lang?: 'id-ID' | 'en-GB' | 'en-US';
   rate?: number;          // Kecepatan membaca (standar anak-anak: 0.8 - 0.9)
   pitch?: number;         // Nada suara (standar ramah anak: 1.0 - 1.1)
@@ -76,7 +76,7 @@ export type ChallengeEvaluationType =
   | 'parity-check'        // Seluruh keping harus berjenis ganjil atau genap
   | 'exact-pieces'        // Harus menggunakan kombinasi kepingan tertentu
   | 'ten-frame-fill'      // Mengisi slot bingkai 10 secara tepat
-  | 'number-bond';        // Pasangan 2 keping yang membentuk nilai tertentu
+  | 'number-bond';        // Pasangan keping yang membentuk nilai tertentu
 
 /**
  * Kriteria validasi jawaban pada kanvas
@@ -92,20 +92,53 @@ export interface ChallengeValidationRules {
 }
 
 /**
- * Struktur modul latihan atau soal asesmen bertahap
+ * Struktur modul latihan atau soal asesmen bertahap (Level / Misi)
  */
 export interface Challenge {
   id: string;
   moduleCode: string;     // Contoh: "CAM-EY-NUM-01" atau "IB-PYP1-NB-10"
   curriculum: CurriculumTrack;
   stage: string;          // Contoh: "Early Years", "Stage 1", "PYP 1"
+  topicId?: string;       // Pengenal topik induk (opsional)
   phase: LearningPhase;
   title: string;
   instruction: TTSInstruction;
   hint?: TTSInstruction;
   validation: ChallengeValidationRules;
-  initialBoardPieces?: PlacedPiece[]; // Keping awal yang sudah terpasang (misal pada soal melengkapi)
+  initialBoardPieces?: PlacedPiece[]; // Keping awal yang sudah terpasang
   availableTrayPieces?: NumiconValue[]; // Batasan keping yang bisa ditarik siswa
+}
+
+/**
+ * Pengelompokan tantangan/misi ke dalam satu topik pembelajaran
+ */
+export interface Topic {
+  id: string;             // Contoh: "s1-topic-bonds-10"
+  title: string;          // Contoh: "Topik 2: Ikatan Bilangan Menuju 10"
+  description?: string;   // Ringkasan tujuan pembelajaran topik
+  challenges: Challenge[];// Daftar level / misi di dalam topik ini
+}
+
+/**
+ * Metadata jenjang / tingkatan kelas (Grade / Stage)
+ */
+export interface StageMetadata {
+  id: string;             // Contoh: "Stage 1", "Early Years"
+  name: string;           // Contoh: "Primary Stage 1"
+  curriculum: CurriculumTrack;
+  description?: string;
+  topics: Topic[];
+}
+
+/**
+ * Metadata lengkap satu jalur kurikulum
+ */
+export interface CurriculumMetadata {
+  id: CurriculumTrack;
+  name: string;
+  badge: string;
+  description: string;
+  stages: StageMetadata[];
 }
 
 /**
@@ -132,10 +165,22 @@ export interface StudentTopicProgress {
   challengeId: string;
   curriculum: CurriculumTrack;
   stage: string;
+  topicId?: string;
   completed: boolean;
   starsEarned: 0 | 1 | 2 | 3;
   score: number;          // Skala 0 - 100
   attemptsCount: number;
   timeSpentSeconds: number;
   lastAttemptTimestamp: number;
+}
+
+/**
+ * Ringkasan statistik capaian belajar pada suatu jenjang atau topik
+ */
+export interface StageProgressSummary {
+  totalChallenges: number;
+  completedCount: number;
+  starsEarned: number;
+  maxPossibleStars: number;
+  completionPercentage: number;
 }
