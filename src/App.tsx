@@ -1,12 +1,12 @@
 // src/App.tsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { GameBoard } from './components/GameBoard';
+import { InteractiveCanvas } from './components/InteractiveCanvas';
 import {
   Challenge,
-  PlacedPiece,
   EvaluationResult,
   StudentTopicProgress,
   CurriculumTrack,
+  InteractionPayload,
 } from './types/math';
 import {
   speakInstruction,
@@ -14,6 +14,7 @@ import {
   playSoundEffect,
 } from './lib/audio';
 import { saveProgress } from './lib/storage';
+import { evaluateInteraction } from './lib/evaluator';
 import { CURRICULA_METADATA, getTopicsByStage } from './content';
 import confetti from 'canvas-confetti';
 import {
@@ -33,13 +34,13 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // 1. State Navigasi Bertingkat (Kurikulum -> Stage -> Topik -> Level)
+  // 1. Navigasi Hirarkis (Kurikulum -> Stage -> Topik -> Level)
   const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumTrack>('ib');
   const [selectedStage, setSelectedStage] = useState<string>('Early Years');
   const [selectedTopicIndex, setSelectedTopicIndex] = useState<number>(0);
   const [currentChallengeIndex, setCurrentChallengeIndex] = useState<number>(0);
 
-  // 2. Data Dinamis dari src/content/index.ts
+  // 2. Data Dinamis dari Content Repository
   const availableStages = useMemo(() => {
     return CURRICULA_METADATA[selectedCurriculum]?.stages || [];
   }, [selectedCurriculum]);
@@ -53,20 +54,22 @@ export default function App() {
   const activeChallenge: Challenge | undefined =
     activeChallenges[currentChallengeIndex] || activeChallenges[0];
 
-  // 3. State Interaksi Papan Kanvas & Evaluasi
-  const [currentTotal, setCurrentTotal] = useState<number>(0);
-  const [currentPieces, setCurrentPieces] = useState<PlacedPiece[]>([]);
+  // 3. State Interaksi Universal & Evaluasi
+  const [currentPayload, setCurrentPayload] = useState<InteractionPayload>({
+    totalValue: 0,
+    placedCount: 0,
+  });
   const [attempts, setAttempts] = useState<number>(0);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isSpeakingText, setIsSpeakingText] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
   const [boardKey, setBoardKey] = useState<number>(0);
 
-  // 4. PWA Installation State
+  // 4. PWA Install Prompt
   const [isInstallable, setIsInstallable] = useState<boolean>(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // 5. Riwayat Bintang & Progres Belajar Siswa (LocalStorage)
+  // 5. Progres Belajar Siswa (LocalStorage)
   const [progressMap, setProgressMap] = useState<Record<string, StudentTopicProgress>>(() => {
     try {
       const saved = localStorage.getItem('mathverse_progress');
@@ -97,15 +100,14 @@ export default function App() {
     setDeferredPrompt(null);
   };
 
-  // Bersihkan papan dan bacakan instruksi audio setiap kali level/topik berganti
+  // Reset kanvas dan otomatis putar instruksi audio saat level/topik berganti
   useEffect(() => {
     stopSpeech();
     setIsSpeakingText(false);
     setAttempts(0);
     setEvaluation(null);
     setShowHint(false);
-    setCurrentTotal(0);
-    setCurrentPieces([]);
+    setCurrentPayload({ totalValue: 0, placedCount: 0 });
     setBoardKey((prev) => prev + 1);
 
     if (activeChallenge) {
@@ -134,191 +136,66 @@ export default function App() {
     });
   };
 
-  const handleBoardUpdate = useCallback((total: number, pieces: PlacedPiece[]) => {
-    setCurrentTotal(total);
-    setCurrentPieces(pieces);
+  // Menangkap payload dari InteractiveCanvas (Numicon, TenFrame, dsb.)
+  const handleInteractionChange = useCallback((payload: InteractionPayload) => {
+    setCurrentPayload(payload);
     setEvaluation((prev) => (prev ? null : prev));
   }, []);
 
-  // Mesin Evaluasi CPA
+  // Evaluasi Jawaban Memanfaatkan evaluator.ts
   const handleCheckAnswer = async () => {
     if (!activeChallenge) return;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
 
-    const rules = activeChallenge.validation;
-    const pieceCount = currentPieces.length;
+    // Evaluasi terpusat
+    const result = evaluateInteraction(activeChallenge, currentPayload, nextAttempts);
+    setEvaluation(result);
+    speakInstruction(result.feedbackSpeech);
 
-    if (pieceCount === 0) {
-      playSoundEffect('wrong');
-      const res: EvaluationResult = {
-        isCorrect: false,
-        currentTotal: 0,
-        currentPieceCount: 0,
-        stars: 0,
-        feedbackText: 'Papan masih kosong! Tarik kepingan dari kotak bawah.',
-        feedbackSpeech: 'Papan masih kosong! Tarik kepingan dari kotak bawah terlebih dahulu.',
+    if (result.isCorrect) {
+      // Efek visual & audio keberhasilan
+      if (result.stars === 3) {
+        playSoundEffect('celebrate');
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.65 },
+          colors: ['#f59e0b', '#38bdf8', '#10b981', '#ec4899'],
+        });
+      } else {
+        playSoundEffect('correct');
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
+      }
+
+      // Simpan riwayat keberhasilan
+      const updatedRecord: StudentTopicProgress = {
+        challengeId: activeChallenge.id,
+        curriculum: activeChallenge.curriculum,
+        stage: activeChallenge.stage,
+        topicId: activeChallenge.topicId,
+        completed: true,
+        starsEarned: Math.max(result.stars, currentProgress?.starsEarned || 0) as 1 | 2 | 3,
+        score: result.stars === 3 ? 100 : result.stars === 2 ? 80 : 60,
+        attemptsCount: nextAttempts,
+        timeSpentSeconds: 0,
+        lastAttemptTimestamp: Date.now(),
       };
-      setEvaluation(res);
-      speakInstruction(res.feedbackSpeech);
-      return;
-    }
 
-    if (rules.type === 'exact-sum') {
-      const target = rules.targetTotal || 0;
-
-      if (currentTotal === target) {
-        if (rules.minPiecesAllowed && pieceCount < rules.minPiecesAllowed) {
-          playSoundEffect('wrong');
-          const res: EvaluationResult = {
-            isCorrect: false,
-            currentTotal,
-            currentPieceCount: pieceCount,
-            stars: 0,
-            feedbackText: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping ya!`,
-            feedbackSpeech: `Jumlah sudah ${target}, tetapi gunakan minimal ${rules.minPiecesAllowed} keping ya!`,
-          };
-          setEvaluation(res);
-          speakInstruction(res.feedbackSpeech);
-          return;
-        }
-
-        if (rules.maxPiecesAllowed && pieceCount > rules.maxPiecesAllowed) {
-          playSoundEffect('wrong');
-          const res: EvaluationResult = {
-            isCorrect: false,
-            currentTotal,
-            currentPieceCount: pieceCount,
-            stars: 0,
-            feedbackText: `Jumlah pas ${target}, tetapi gunakan tepat ${rules.maxPiecesAllowed} keping!`,
-            feedbackSpeech: `Jumlah pas ${target}, tetapi gunakan tepat ${rules.maxPiecesAllowed} keping!`,
-          };
-          setEvaluation(res);
-          speakInstruction(res.feedbackSpeech);
-          return;
-        }
-
-        await handleSuccess(nextAttempts);
-        return;
-      }
-
-      playSoundEffect('wrong');
-      const diff = Math.abs(target - currentTotal);
-      const text =
-        currentTotal < target
-          ? `Total saat ini ${currentTotal}. Masih kurang ${diff} lubang lagi!`
-          : `Total saat ini ${currentTotal}. Kelebihan ${diff} lubang, coba kurangi kepingan.`;
-
-      const res: EvaluationResult = {
-        isCorrect: false,
-        currentTotal,
-        currentPieceCount: pieceCount,
-        stars: 0,
-        feedbackText: text,
-        feedbackSpeech: text,
+      const newProgressMap = {
+        ...progressMap,
+        [activeChallenge.id]: updatedRecord,
       };
-      setEvaluation(res);
-      speakInstruction(res.feedbackSpeech);
-      return;
-    }
+      setProgressMap(newProgressMap);
 
-    if (rules.type === 'parity-check') {
-      const target = rules.targetTotal || 0;
-      const isTargetEven = rules.requiredParity === 'even';
-      const hasInvalidPiece = isTargetEven
-        ? currentPieces.some((p) => p.value % 2 !== 0)
-        : currentPieces.some((p) => p.value % 2 === 0);
-
-      if (hasInvalidPiece) {
-        playSoundEffect('wrong');
-        const text = isTargetEven
-          ? 'Ada keping ganjil dengan tonjolan! Gunakan hanya keping genap yang tepinya rata.'
-          : 'Ada keping genap yang rata! Gunakan hanya keping ganjil yang memiliki tonjolan.';
-        const res: EvaluationResult = {
-          isCorrect: false,
-          currentTotal,
-          currentPieceCount: pieceCount,
-          stars: 0,
-          feedbackText: text,
-          feedbackSpeech: text,
-        };
-        setEvaluation(res);
-        speakInstruction(res.feedbackSpeech);
-        return;
+      try {
+        localStorage.setItem('mathverse_progress', JSON.stringify(newProgressMap));
+        await saveProgress(updatedRecord);
+      } catch (e) {
+        console.warn('Gagal menyimpan progres secara lokal', e);
       }
-
-      if (currentTotal !== target) {
-        playSoundEffect('wrong');
-        const parityWord = isTargetEven ? 'genap' : 'ganjil';
-        const res: EvaluationResult = {
-          isCorrect: false,
-          currentTotal,
-          currentPieceCount: pieceCount,
-          stars: 0,
-          feedbackText: `Kepingan sudah ${parityWord}, tetapi total bernilai ${currentTotal}. Targetnya adalah ${target}.`,
-          feedbackSpeech: `Kepingan sudah ${parityWord}, tetapi total bernilai ${currentTotal}. Buatlah hingga pas ${target}.`,
-        };
-        setEvaluation(res);
-        speakInstruction(res.feedbackSpeech);
-        return;
-      }
-
-      await handleSuccess(nextAttempts);
-    }
-  };
-
-  const handleSuccess = async (finalAttempts: number) => {
-    if (!activeChallenge) return;
-    const starsEarned = (finalAttempts <= 1 ? 3 : finalAttempts === 2 ? 2 : 1) as 1 | 2 | 3;
-
-    if (starsEarned === 3) {
-      playSoundEffect('celebrate');
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.65 },
-        colors: ['#f59e0b', '#38bdf8', '#10b981', '#ec4899'],
-      });
     } else {
-      playSoundEffect('correct');
-      confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
-    }
-
-    const res: EvaluationResult = {
-      isCorrect: true,
-      currentTotal,
-      currentPieceCount: currentPieces.length,
-      stars: starsEarned,
-      feedbackText: `Luar biasa! Target tercapai sempurna dengan ${starsEarned} bintang!`,
-      feedbackSpeech: `Luar biasa! Target tercapai sempurna. Kamu mendapatkan ${starsEarned} bintang!`,
-    };
-
-    setEvaluation(res);
-    speakInstruction(res.feedbackSpeech);
-
-    const updatedRecord: StudentTopicProgress = {
-      challengeId: activeChallenge.id,
-      curriculum: activeChallenge.curriculum,
-      stage: activeChallenge.stage,
-      topicId: activeChallenge.topicId,
-      completed: true,
-      starsEarned: Math.max(starsEarned, currentProgress?.starsEarned || 0) as 1 | 2 | 3,
-      score: starsEarned === 3 ? 100 : starsEarned === 2 ? 80 : 60,
-      attemptsCount: finalAttempts,
-      timeSpentSeconds: 0,
-      lastAttemptTimestamp: Date.now(),
-    };
-
-    const newProgressMap = {
-      ...progressMap,
-      [activeChallenge.id]: updatedRecord,
-    };
-    setProgressMap(newProgressMap);
-    try {
-      localStorage.setItem('mathverse_progress', JSON.stringify(newProgressMap));
-      await saveProgress(updatedRecord);
-    } catch (e) {
-      console.warn('Gagal menyimpan progres secara lokal', e);
+      playSoundEffect('wrong');
     }
   };
 
@@ -338,8 +215,7 @@ export default function App() {
     playSoundEffect('tap');
     setBoardKey((prev) => prev + 1);
     setEvaluation(null);
-    setCurrentTotal(0);
-    setCurrentPieces([]);
+    setCurrentPayload({ totalValue: 0, placedCount: 0 });
   };
 
   const totalStarsAccumulated = useMemo(() => {
@@ -348,7 +224,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 pb-28 md:pb-12 font-sans selection:bg-amber-200">
-      {/* 1. Bar Navigasi Atas Responsif */}
+      {/* 1. Bar Navigasi Atas */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-40 px-3 sm:px-6 py-2.5 sm:py-3 shadow-xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -391,7 +267,7 @@ export default function App() {
 
       {/* 2. Konten Pembelajaran */}
       <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 sm:pt-5 flex flex-col gap-3 sm:gap-4">
-        {/* Panel 1: Kurikulum & Jenjang */}
+        {/* Panel Kurikulum & Jenjang */}
         <div className="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-slate-500" />
@@ -442,7 +318,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Panel 2: Pilihan Topik Pembelajaran */}
+        {/* Panel Pilihan Topik */}
         {availableTopics.length > 0 && (
           <div className="bg-white px-3 py-2.5 sm:px-4 sm:py-3 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-2 overflow-x-auto scrollbar-none touch-pan-x">
             <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-400 flex-shrink-0 mr-1">
@@ -472,7 +348,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Panel 3: Deretan Tombol Level 1-10 */}
+        {/* Panel Deretan Level */}
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin touch-pan-x">
           {activeChallenges.map((ch, idx) => {
             const isCompleted = progressMap[ch.id]?.completed;
@@ -506,14 +382,17 @@ export default function App() {
           })}
         </div>
 
-        {/* Kotak Instruksi & Audio TTS */}
+        {/* Kotak Instruksi & TTS */}
         {activeChallenge && (
           <section className="bg-amber-50/90 border-2 border-amber-200 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs relative overflow-hidden">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-md">
                     {activeChallenge.curriculum.toUpperCase()} • {activeChallenge.stage}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                    {activeChallenge.interactiveType || 'numicon'}
                   </span>
                   <span className="text-[11px] sm:text-xs font-semibold text-amber-700">
                     {activeChallenge.moduleCode}
@@ -544,7 +423,6 @@ export default function App() {
                       ? 'bg-amber-600 text-white animate-pulse'
                       : 'bg-amber-500 hover:bg-amber-600 text-white'
                   }`}
-                  aria-label="Dengarkan teks instruksi"
                 >
                   {isSpeakingText ? (
                     <>
@@ -574,7 +452,7 @@ export default function App() {
                         ? 'bg-amber-200 text-amber-900 border-amber-300'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
-                    title="Tampilkan petunjuk bantuan"
+                    title="Petunjuk bantuan"
                   >
                     <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
@@ -591,38 +469,39 @@ export default function App() {
           </section>
         )}
 
-        {/* 3. Kanvas Papan Permainan Numicon */}
-        <section className="relative">
-          <GameBoard
-            key={boardKey}
-            availableTrayPieces={activeChallenge?.availableTrayPieces}
-            targetTenFrame={activeChallenge?.validation.targetTotal === 10}
-            highlightOddPegs={activeChallenge?.validation.type === 'parity-check'}
-            onTotalChange={handleBoardUpdate}
-          />
-        </section>
+        {/* 3. Kanvas Interaktif Universal (Beralih sesuai interactiveType) */}
+        {activeChallenge && (
+          <section className="relative">
+            <InteractiveCanvas
+              challenge={activeChallenge}
+              boardKey={boardKey}
+              readOnly={evaluation?.isCorrect}
+              onStateChange={handleInteractionChange}
+            />
+          </section>
+        )}
 
-        {/* 4. Panel Bawah Sticky di Ponsel / Card di Desktop */}
+        {/* 4. Panel Kontrol Bawah */}
         <footer className="fixed md:static bottom-0 left-0 right-0 z-30 bg-white/95 md:bg-white backdrop-blur-md md:backdrop-blur-none border-t md:border border-slate-200 p-3 sm:p-5 md:rounded-3xl shadow-lg md:shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
             <div className="bg-slate-100 px-3.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl border border-slate-200 flex items-baseline gap-2">
               <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-500">
-                Total Lubang:
+                Nilai / Objek:
               </span>
               <span
                 className={`text-xl sm:text-2xl font-black ${
                   activeChallenge?.validation.targetTotal &&
-                  currentTotal === activeChallenge.validation.targetTotal
+                  currentPayload.totalValue === activeChallenge.validation.targetTotal
                     ? 'text-emerald-600'
                     : 'text-blue-600'
                 }`}
               >
-                {currentTotal}
+                {currentPayload.totalValue ?? currentPayload.placedCount ?? 0}
               </span>
             </div>
 
             <div className="text-[11px] sm:text-xs text-slate-400 font-semibold">
-              Keping: <span className="text-slate-700 font-bold">{currentPieces.length}</span>
+              Terpasang: <span className="text-slate-700 font-bold">{currentPayload.placedCount ?? 0}</span>
             </div>
           </div>
 
@@ -663,7 +542,7 @@ export default function App() {
               type="button"
               onClick={handleResetChallenge}
               className="p-2.5 sm:p-3 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition"
-              title="Mulai Ulang Misi Ini"
+              title="Mulai Ulang Misi"
             >
               <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
